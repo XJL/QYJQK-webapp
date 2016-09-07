@@ -16,7 +16,7 @@ import {
 
 import Camera from 'react-native-camera';
 
-const DEFAULT_URL = 'http://www.qyjqk.com/mb/index';
+const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
 export default class Home extends Component {
     constructor(props){
