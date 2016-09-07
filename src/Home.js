@@ -18,12 +18,19 @@ import Camera from 'react-native-camera';
 
 const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
+const uptoken = 'VEY_f42Tf3lEIpeqkfb_6ZBhTGbkMwb3i39D15Wz:8lzPBRqC8WLLg0HfkhhXhnkByhA=:eyJzY29wZSI6InRlc3RzcGFjZSIsImRlYWRsaW5lIjoxNDczNzQ4NTA4fQ==';
+
 export default class Home extends Component {
     constructor(props){
         super(props);
 
         // 最后一次点击返回键的时间戳
         this.lastBackPressed = null;
+
+        // 考试id
+        this.examId = null;
+        // 考生id
+        this.userId = null;
 
         this.state = {
             url: DEFAULT_URL,
@@ -52,6 +59,26 @@ export default class Home extends Component {
                     this.camera.capture()
                         .then((data) => {
                             console.log('data---->', data);
+                            let formData = new FormData();
+                            let file = {uri: data.path, type: 'multipart/form-data',
+                                name: this.examId + '-' + this.userId + '-' + '1'/*序号 暂定是1*/ + '.jpg'}
+
+                            formData.append('images', file);
+                            fetch(url/*七牛*/, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'multipart/form-data',
+                                },
+                                body: {
+                                    formData,
+                                    uptoken
+                                },
+                            })
+                            .then((response) => response.text())
+                            .then((responseData) => {
+                                console.log('responseData--->', responseData);
+                            })
+                            .catch((error) => console.error('error', error));
                         });
                 }
             }
@@ -108,6 +135,7 @@ export default class Home extends Component {
     }
 
     onNavigationStateChange(navState) {
+        console.log('url---->', navState.url);
         const itemNo = this.getItemName(navState.url, 'exam');
         const userId = this.getUserId(navState.url);
 
