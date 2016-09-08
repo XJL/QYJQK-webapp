@@ -1,24 +1,37 @@
 import React, { Component } from 'react';
 import {
-    AppRegistry,
     StyleSheet,
     Text,
     View,
     Dimensions,
-    TouchableHighlight,
-    WebView,
     BackAndroid,
     Platform,
     ToastAndroid,
-    CookieManager,
     StatusBar
 } from 'react-native';
 
 import Camera from 'react-native-camera';
+import WebViewBridge from 'react-native-webview-bridge';
 
 const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
 const uptoken = 'VEY_f42Tf3lEIpeqkfb_6ZBhTGbkMwb3i39D15Wz:8lzPBRqC8WLLg0HfkhhXhnkByhA=:eyJzY29wZSI6InRlc3RzcGFjZSIsImRlYWRsaW5lIjoxNDczNzQ4NTA4fQ==';
+
+const injectScript = `
+(function () {
+    if (WebViewBridge) {
+
+        WebViewBridge.onMessage = function (message) {
+            if (message === "hello from react-native") {
+                WebViewBridge.send("got the message inside webview");
+            }
+            alert(message);
+        };
+
+        // WebViewBridge.send("hello from webview");
+    }
+}());
+`;
 
 export default class Home extends Component {
     constructor(props){
@@ -105,6 +118,17 @@ export default class Home extends Component {
         }
     }
 
+    onBridgeMessage(message){
+        switch (message) {
+            case "hello from webview":
+                this.webviewbridge.sendToBridge("hello from react-native");
+                break;
+            case "got the message inside webview":
+                console.log("we have got a message from webview! yeah");
+                break;
+        }
+    }
+
     render() {
         return (
             <View style={styles.container}>
@@ -112,14 +136,16 @@ export default class Home extends Component {
                     translucent={true}
                     hidden={true}
                 />
-                <WebView
-                    ref={web=>this.webview=web}
+                <WebViewBridge
+                    ref={web=>this.webviewbridge=web}
                     source={{uri: DEFAULT_URL}}
                     style={styles.jqkweb}
                     startInLoadingState={true}
                     renderLoading={()=><View style={styles.loading}><Text style={styles.loadingText}>正在加载...</Text></View>}
                     onNavigationStateChange={(navState) => this.onNavigationStateChange(navState)}
                     scalesPageToFit={this.state.scalesPageToFit}
+                    onBridgeMessage={this.onBridgeMessage.bind(this)}
+                    injectedJavaScript={injectScript}
                 />
                 <Camera
                     ref={cam => this.camera = cam}
@@ -205,7 +231,7 @@ export default class Home extends Component {
         }
         // 浏览过程中返回键回到上个页面
         else {
-            this.webview.goBack();
+            this.webviewbridge.goBack();
         }
         return true;
     }
