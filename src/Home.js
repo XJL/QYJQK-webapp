@@ -7,15 +7,21 @@ import {
     BackAndroid,
     Platform,
     ToastAndroid,
-    StatusBar
+    StatusBar,
+    WebView
 } from 'react-native';
 
 import Camera from 'react-native-camera';
 import WebViewBridge from 'react-native-webview-bridge';
+import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
 const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
-const uptoken = 'VEY_f42Tf3lEIpeqkfb_6ZBhTGbkMwb3i39D15Wz:8lzPBRqC8WLLg0HfkhhXhnkByhA=:eyJzY29wZSI6InRlc3RzcGFjZSIsImRlYWRsaW5lIjoxNDczNzQ4NTA4fQ==';
+const test = {
+    token: 'VEY_f42Tf3lEIpeqkfb_6ZBhTGbkMwb3i39D15Wz:8lzPBRqC8WLLg0HfkhhXhnkByhA=:eyJzY29wZSI6InRlc3RzcGFjZSIsImRlYWRsaW5lIjoxNDczNzQ4NTA4fQ==',
+    AK: '',
+    SK: ''
+};
 
 const injectScript = `
 (function () {
@@ -44,6 +50,9 @@ export default class Home extends Component {
         this.examId = null;
         // 考生id
         this.userId = null;
+        // 照片序号
+        this.key = 1;
+
 
         this.state = {
             url: DEFAULT_URL,
@@ -68,31 +77,42 @@ export default class Home extends Component {
         // 设置定时器，每隔60s拍一张照
         this.timer = setInterval(() => {
             try{
-                if(this.camera) {
-                    this.camera.capture()
-                        .then((data) => {
-                            console.log('data---->', data);
-                            let formData = new FormData();
-                            let file = {uri: data.path, type: 'multipart/form-data',
-                                name: this.examId + '-' + this.userId + '-' + '1'/*序号 暂定是1*/ + '.jpg'}
+                if(this.camera){
+                    this.camera.capture().then((data) => {
+                        console.log('data---->', data);
 
-                            formData.append('images', file);
-                            fetch(url/*七牛*/, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'multipart/form-data',
-                                },
-                                body: {
-                                    formData,
-                                    uptoken
-                                },
+                        Conf.ACCESS_KEY = test.AK;
+                        Conf.SECRET_KEY = test.SK;
+
+                        const putPolicy = new Auth.PutPolicy2(
+                            {scope: "<Bucket>:<Key>"}  // {"scope":"qtestbucket:123","async":"sdf","endUser":"dfc","deadline":1473450674}
+                        );
+
+                        // const uptoken = putPolicy.token();
+                        const uptoken = text.token;
+
+                        this.key++;
+
+                        const formInput = {
+                            key: this.key,
+                            file : {uri: data.path, type: 'application/octet-stream' /*'multipart/form-data'*/,
+                                name: this.examId + '-' + this.userId + '-' + this.key + '.jpg'},
+                        };
+
+                        Rpc.uploadFile(data.path, uptoken, formInput)
+                            .then((response) => {
+                                return response.text();
                             })
-                            .then((response) => response.text())
-                            .then((responseData) => {
-                                console.log('responseData--->', responseData);
+                            .then((responseText) => {
+                                console.log('upload success', responseText);
                             })
-                            .catch((error) => console.error('error', error));
-                        });
+                            .catch(
+                                console.log('upload error', error)
+                            );
+                    });
+                }
+                else {
+                    this.key = 1;
                 }
             }
             catch(error){
@@ -129,6 +149,15 @@ export default class Home extends Component {
         }
     }
 
+    // 根据url判断是否显示镜头
+    showCamera(url){
+        // url里包含exam 和 play的时候开启摄像头
+        if((url.indexOf('exam') > -1) && (url.indexOf('play'))> -1){
+            return true;
+        }
+        return false;
+    }
+
     render() {
         return (
             <View style={styles.container}>
@@ -136,7 +165,20 @@ export default class Home extends Component {
                     translucent={true}
                     hidden={true}
                 />
-                <WebViewBridge
+                {
+                    // <WebViewBridge
+                    //     ref={web=>this.webviewbridge=web}
+                    //     source={{uri: DEFAULT_URL}}
+                    //     style={styles.jqkweb}
+                    //     startInLoadingState={true}
+                    //     renderLoading={()=><View style={styles.loading}><Text style={styles.loadingText}>正在加载...</Text></View>}
+                    //     onNavigationStateChange={(navState) => this.onNavigationStateChange(navState)}
+                    //     scalesPageToFit={this.state.scalesPageToFit}
+                    //     onBridgeMessage={this.onBridgeMessage.bind(this)}
+                    //     injectedJavaScript={injectScript}
+                    // />
+                }
+                <WebView
                     ref={web=>this.webviewbridge=web}
                     source={{uri: DEFAULT_URL}}
                     style={styles.jqkweb}
@@ -144,26 +186,27 @@ export default class Home extends Component {
                     renderLoading={()=><View style={styles.loading}><Text style={styles.loadingText}>正在加载...</Text></View>}
                     onNavigationStateChange={(navState) => this.onNavigationStateChange(navState)}
                     scalesPageToFit={this.state.scalesPageToFit}
-                    onBridgeMessage={this.onBridgeMessage.bind(this)}
-                    injectedJavaScript={injectScript}
                 />
-                <Camera
-                    ref={cam => this.camera = cam}
-                    captureQuality='low'
-                    captureTarget={Camera.constants.CaptureTarget.temp}
-                    type="front"
-                    style={styles.preview}
-                    aspect={Camera.constants.Aspect.fill}
-                    playSoundOnCapture={false}
-                />
+                {
+                    // this.showCamera(this.state.url) &&
+                    <Camera
+                        ref={cam => this.camera = cam}
+                        captureQuality='low'
+                        captureTarget={Camera.constants.CaptureTarget.temp}
+                        type="front"
+                        style={styles.preview}
+                        aspect={Camera.constants.Aspect.fill}
+                        playSoundOnCapture={false}
+                    />
+                }
             </View>
         );
     }
 
     onNavigationStateChange(navState) {
         console.log('url---->', navState.url);
-        const itemNo = this.getItemName(navState.url, 'exam');
-        const userId = this.getUserId(navState.url);
+        this.examId = this.getItemName(navState.url, 'exam');
+        this.userId = this.getUserId(navState.url);
 
         this.setState({
             url: navState.url,
@@ -184,10 +227,9 @@ export default class Home extends Component {
 
             const itemNO = url.substring(numStart, numStart + numLen);
 
-            console.log('test-------->', itemNO);
             return itemNO;
         }
-        return 0;
+        return null;
     }
 
     // 获取用户的id
@@ -206,13 +248,11 @@ export default class Home extends Component {
             }
             const userId = url.substring(idStart, idStart + idLen);
 
-            console.log('userId-------->',  userId);
             return userId;
         }
         else {
-            return 0;
+            return null;
         }
-
     }
 
     onBackAndroid() {
