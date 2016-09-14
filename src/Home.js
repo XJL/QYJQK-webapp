@@ -16,7 +16,7 @@ import WebViewBridge from 'react-native-webview-bridge';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
 // const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
-const DEFAULT_URL = 'http://www.baidu.com';
+const DEFAULT_URL = 'http://120.26.55.126/index2.html';
 
 const test = {
     token: 'VEY_f42Tf3lEIpeqkfb_6ZBhTGbkMwb3i39D15Wz:8lzPBRqC8WLLg0HfkhhXhnkByhA=:eyJzY29wZSI6InRlc3RzcGFjZSIsImRlYWRsaW5lIjoxNDczNzQ4NTA4fQ==',
