@@ -14,10 +14,9 @@ import {
 import Camera from 'react-native-camera';
 import WebViewBridge from 'react-native-webview-bridge';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
-import ErrorPage from './ErrorPage';
 
-const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
-// const DEFAULT_URL = 'http://www.baidu.com';
+// const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
+const DEFAULT_URL = 'http://www.baidu.com';
 
 const test = {
     token: 'VEY_f42Tf3lEIpeqkfb_6ZBhTGbkMwb3i39D15Wz:8lzPBRqC8WLLg0HfkhhXhnkByhA=:eyJzY29wZSI6InRlc3RzcGFjZSIsImRlYWRsaW5lIjoxNDczNzQ4NTA4fQ==',
@@ -36,7 +35,7 @@ const injectScript = `
             alert(message);
         };
 
-        // WebViewBridge.send("hello from webview");
+        WebViewBridge.send("hello from webview");
     }
 }());
 `;
@@ -83,37 +82,27 @@ export default class Home extends Component {
                     this.camera.capture().then((data) => {
                         console.log('data---->');
 
-                        // // AK和SK需要网络请求得到
-                        // Conf.ACCESS_KEY = test.AK;
-                        // Conf.SECRET_KEY = test.SK;
+                        // const uptoken = test.token;
                         //
-                        // const putPolicy = new Auth.PutPolicy2(
-                        //     {scope: "<Bucket>:<Key>"}  // {"scope":"qtestbucket:123","async":"sdf","endUser":"dfc","deadline":1473450674}
-                        // );
+                        // this.key++;
                         //
-                        // // const uptoken = putPolicy.token();
-
-                        const uptoken = test.token;
-
-                        this.key++;
-
-                        const formInput = {
-                            key: this.key,
-                            file : {uri: data.path, type: 'application/octet-stream' /*'multipart/form-data'*/,
-                                name: this.examId + '-' + this.userId + '-' + this.key + '.jpg'},
-                        };
-
-                        Rpc.uploadFile(data.path, uptoken, formInput)
-                            .then((response) => {
-                                console.log('success---->');
-                                return response.text();
-                            })
-                            .then((responseText) => {
-                                console.log('upload success', responseText);
-                            })
-                            .catch((error)=>{
-                                console.log('upload error', error)
-                            });
+                        // const formInput = {
+                        //     key: this.key,
+                        //     file : {uri: data.path, type: 'application/octet-stream',
+                        //         name: this.examId + '-' + this.userId + '-' + this.key + '.jpg'},
+                        // };
+                        //
+                        // Rpc.uploadFile(data.path, uptoken, formInput)
+                        //     .then((response) => {
+                        //         console.log('success---->');
+                        //         return response.text();
+                        //     })
+                        //     .then((responseText) => {
+                        //         console.log('upload success', responseText);
+                        //     })
+                        //     .catch((error)=>{
+                        //         console.log('upload error', error)
+                        //     });
 
                     });
                 }
@@ -124,7 +113,7 @@ export default class Home extends Component {
             catch(error){
                 console.log('capture error', error);
             }
-        }.bind(this), 3000);// TODO: 时间要改回来
+        }.bind(this), 60000);
     }
 
     componentWillUnmount(){
@@ -171,26 +160,14 @@ export default class Home extends Component {
                     translucent={true}
                     hidden={true}
                 />
-                {
-                    // <WebViewBridge
-                    //     ref={web=>this.webviewbridge=web}
-                    //     source={{uri: DEFAULT_URL}}
-                    //     style={styles.jqkweb}
-                    //     startInLoadingState={true}
-                    //     renderLoading={()=><View style={styles.loading}><Text style={styles.loadingText}>正在加载...</Text></View>}
-                    //     onNavigationStateChange={(navState) => this.onNavigationStateChange(navState)}
-                    //     scalesPageToFit={this.state.scalesPageToFit}
-                    //     onBridgeMessage={this.onBridgeMessage.bind(this)}
-                    //     injectedJavaScript={injectScript}
-                    // />
-                }
-                <WebView
-                    ref={web=>this.webviewbridge=web}
+                <WebViewBridge
+                    onBridgeMessage={this.onBridgeMessage.bind(this)}
+                    injectedJavaScript={injectScript}
+                    ref={webviewbridge=>this.webviewbridge=webviewbridge}
                     source={{uri: DEFAULT_URL}}
                     style={styles.jqkweb}
                     startInLoadingState={true}
                     renderLoading={()=><View style={styles.loading}><Text style={styles.loadingText}>正在加载...</Text></View>}
-                    renderError={()=><ErrorPage errorText={"加载失败，点击重试..."}/>}
                     onNavigationStateChange={(navState) => this.onNavigationStateChange(navState)}
                     scalesPageToFit={this.state.scalesPageToFit}
                 />
@@ -200,14 +177,14 @@ export default class Home extends Component {
                         ref={cam => this.camera = cam}
                         captureQuality='low'
                         captureTarget={Camera.constants.CaptureTarget.temp}
-                        type="back"
+                        type="front"
                         style={styles.preview}
                         aspect={Camera.constants.Aspect.fill}
                         playSoundOnCapture={false}
                     />
                 }
             </View>
-        );// TODO: 摄像头记得改为前置
+        );
     }
 
     onNavigationStateChange(navState) {
