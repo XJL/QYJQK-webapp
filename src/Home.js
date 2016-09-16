@@ -15,27 +15,18 @@ import Camera from 'react-native-camera';
 import WebViewBridge from 'react-native-webview-bridge';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
-const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
-// const DEFAULT_URL = 'http://www.baidu.com';
+// const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
-const test = {
-    token: 'VEY_f42Tf3lEIpeqkfb_6ZBhTGbkMwb3i39D15Wz:8lzPBRqC8WLLg0HfkhhXhnkByhA=:eyJzY29wZSI6InRlc3RzcGFjZSIsImRlYWRsaW5lIjoxNDczNzQ4NTA4fQ==',
-    AK: '',
-    SK: '',
-};
+// 测试
+const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam?param1=6';
 
+// 注入的js方法
 const injectScript = `
 (function () {
     if (WebViewBridge) {
-
-        WebViewBridge.onMessage = function (message) {
-            if (message === "hello from react-native") {
-                WebViewBridge.send("got the message inside webview");
-            }
-            alert(message);
-        };
-
-        WebViewBridge.send("hello from webview");
+         if(reactInit){
+            reactInit( WebViewBridge );
+        }
     }
 }());
 `;
@@ -44,23 +35,12 @@ export default class Home extends Component {
     constructor(props){
         super(props);
 
-        // 最后一次点击返回键的时间戳
-        this.lastBackPressed = null;
-
-        // 考试id
-        this.examId = null;
-        // 考生id
-        this.userId = null;
-        // 照片序号
-        this.key = 0;
-
-
         this.state = {
             url: DEFAULT_URL,
-            status: 'No Page Loaded',
             backButtonEnabled: false,
             forwardButtonEnabled: false,
             scalesPageToFit: true,
+            showCamera: false
         };
     }
 
@@ -74,46 +54,6 @@ export default class Home extends Component {
                 console.log('add event listener error', error.message);
             }
         }
-
-        // 设置定时器，每隔60s拍一张照
-        this.timer = setInterval(async function(){
-            try{
-                if(this.camera){
-                    this.camera.capture().then((data) => {
-                        console.log('data---->');
-
-                        // const uptoken = test.token;
-                        //
-                        // this.key++;
-                        //
-                        // const formInput = {
-                        //     key: this.key,
-                        //     file : {uri: data.path, type: 'application/octet-stream',
-                        //         name: this.examId + '-' + this.userId + '-' + this.key + '.jpg'},
-                        // };
-                        //
-                        // Rpc.uploadFile(data.path, uptoken, formInput)
-                        //     .then((response) => {
-                        //         console.log('success---->');
-                        //         return response.text();
-                        //     })
-                        //     .then((responseText) => {
-                        //         console.log('upload success', responseText);
-                        //     })
-                        //     .catch((error)=>{
-                        //         console.log('upload error', error)
-                        //     });
-
-                    });
-                }
-                else {
-                    this.key = 0;
-                }
-            }
-            catch(error){
-                console.log('capture error', error);
-            }
-        }.bind(this), 60000);
     }
 
     componentWillUnmount(){
@@ -125,41 +65,12 @@ export default class Home extends Component {
                 console.log('remove event listener error', error.message);
             }
         }
-
-        // 移除定时器
-        if(this.timer){
-            clearInterval(this.timer);
-            this.timer = null;
-        }
-    }
-
-    onBridgeMessage(message){
-        switch (message) {
-            case "hello from webview":
-                this.webviewbridge.sendToBridge("hello from react-native");
-                break;
-            case "got the message inside webview":
-                console.log("we have got a message from webview! yeah");
-                break;
-        }
-    }
-
-    // 根据url判断是否显示镜头
-    showCamera(url){
-        // url里包含exam 和 play的时候开启摄像头
-        if((url.indexOf('exam') > -1) && (url.indexOf('play'))> -1){
-            return true;
-        }
-        return false;
     }
 
     render() {
         return (
             <View style={styles.container}>
-                <StatusBar
-                    translucent={true}
-                    hidden={true}
-                />
+                <StatusBar translucent={true} hidden={true}/>
                 <WebViewBridge
                     onBridgeMessage={this.onBridgeMessage.bind(this)}
                     injectedJavaScript={injectScript}
@@ -173,7 +84,7 @@ export default class Home extends Component {
                     javaScriptEnabled={true}
                 />
                 {
-                    this.showCamera(this.state.url) &&
+                    this.state.showCamera &&
                     <Camera
                         ref={cam => this.camera = cam}
                         captureQuality='low'
@@ -188,55 +99,80 @@ export default class Home extends Component {
         );
     }
 
+    // webview桥接受msg方法
+    onBridgeMessage(message){
+        console.log('onBridgeMessage---->');
+
+        this.getDataFromMessage(message);
+    }
+
+    // 解析网页传过来的msg
+    getDataFromMessage(message){
+        const jsonObj = eval("("+message+")");
+        console.log(jsonObj);
+
+        this.userId = jsonObj.obj.userId,
+        this.uptoken = jsonObj.obj.token;
+        this.prefix = jsonObj.obj.prefix;
+
+        // code=0打开摄像头
+        if(jsonObj.code == 0) {
+            this.setState({showCamera: true});
+
+            this.captureAndUploadImage();
+
+            // 设置定时器，每隔60s拍一张照
+            this.timer = setInterval(async function(){
+                try{
+                    this.captureAndUploadImage();
+                }
+                catch(error){
+                    console.log('capture error', error);
+                }
+            }.bind(this), 60000);
+        }
+    }
+
+    captureAndUploadImage(){
+        if(this.camera) {
+            this.camera.capture().then((data) => {
+                console.log('capture---->');
+
+                // if(this.uptoken) {
+                //     const formInput = {
+                //         file : {uri: data.path, type: 'application/octet-stream',
+                //             name: `${this.prefix}${Date.now()}.jpg`},
+                //     };
+                //
+                //     Rpc.uploadFile(data.path, this.uptoken, formInput)
+                //         .then((response) => {
+                //             return response.text();
+                //         })
+                //         .then((responseText) => {
+                //             console.log('upload success', responseText);
+                //         })
+                //         .catch((error)=>{
+                //             console.log('upload error', error)
+                //         });
+                // }
+            });
+        }
+    }
+
     onNavigationStateChange(navState) {
         console.log('url---->', navState.url);
-        this.examId = this.getItemName(navState.url, 'exam');
-        this.userId = this.getUserId(navState.url);
 
         this.setState({
             url: navState.url,
             backButtonEnabled: navState.canGoBack,
             forwardButtonEnabled: navState.canGoForward,
-            status: navState.title,
             scalesPageToFit: true
         });
-    }
 
-    // 获取项目参数
-    getItemName(url, itemName){
-        const index = url.indexOf(itemName + '/');
-
-        if(index > -1){
-            const numStart = index + (itemName.length + 1);
-            const numLen = url.substring(numStart).indexOf('/');
-
-            const itemNO = url.substring(numStart, numStart + numLen);
-
-            return itemNO;
-        }
-        return null;
-    }
-
-    // 获取用户的id
-    getUserId(url){
-        const index = url.indexOf('param2');
-
-        if(index > -1){
-            const idStart = index + 'param2='.length;
-            let idLen = 0;
-            const endIndex = url.substring(idStart).indexOf('&')
-            if(endIndex > -1){
-                idLen = endIndex;
-            }
-            else {
-                idLen = url.substring(idStart).length;
-            }
-            const userId = url.substring(idStart, idStart + idLen);
-
-            return userId;
-        }
-        else {
-            return null;
+        // url改变就移除计时器
+        if(this.timer){
+            clearInterval(this.timer);
+            this.timer = null;
         }
     }
 
