@@ -13,6 +13,8 @@ import {
 
 import Camera from 'react-native-camera';
 import WebViewBridge from 'react-native-webview-bridge';
+import ErrorPage from './ErrorPage';
+import LoadingPage from './LoadingPage';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
 // const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
@@ -78,7 +80,9 @@ export default class Home extends Component {
                     source={{uri: DEFAULT_URL}}
                     style={styles.jqkweb}
                     startInLoadingState={true}
-                    renderLoading={()=><View style={styles.loading}><Text style={styles.loadingText}>正在加载...</Text></View>}
+                    renderLoading={()=><LoadingPage />}
+                    renderError={()=><ErrorPage onBack={()=>this.webviewbridge.goBack()}
+                        errorText={"加载失败，点击重试..."} onReload={()=>this.webviewbridge.reload()}/>}
                     onNavigationStateChange={(navState) => this.onNavigationStateChange(navState)}
                     scalesPageToFit={this.state.scalesPageToFit}
                     javaScriptEnabled={true}
@@ -89,7 +93,8 @@ export default class Home extends Component {
                         ref={cam => this.camera = cam}
                         captureQuality='low'
                         captureTarget={Camera.constants.CaptureTarget.temp}
-                        type="front"
+                        // type="front"
+                        type="back"
                         style={styles.preview}
                         aspect={Camera.constants.Aspect.fill}
                         playSoundOnCapture={false}
@@ -119,42 +124,40 @@ export default class Home extends Component {
         if(jsonObj.code == 0) {
             this.setState({showCamera: true});
 
-            this.captureAndUploadImage();
-
+            setTimeout(()=>this.captureAndUploadImage(), 2000);
             // 设置定时器，每隔60s拍一张照
             this.timer = setInterval(async function(){
-                try{
-                    this.captureAndUploadImage();
-                }
-                catch(error){
-                    console.log('capture error', error);
-                }
-            }.bind(this), 60000);
+                this.captureAndUploadImage();
+            }.bind(this), 5 * 1000);
         }
     }
 
     captureAndUploadImage(){
         if(this.camera) {
-            this.camera.capture().then((data) => {
-                console.log('capture---->');
+            this.camera.capture()
+                .then((data) => {
+                    console.log('capture---->');
 
-                // if(this.uptoken) {
-                //     const formInput = {
-                //         file : {uri: data.path, type: 'application/octet-stream',
-                //             name: `${this.prefix}${Date.now()}.jpg`},
-                //     };
-                //
-                //     Rpc.uploadFile(data.path, this.uptoken, formInput)
-                //         .then((response) => {
-                //             return response.text();
-                //         })
-                //         .then((responseText) => {
-                //             console.log('upload success', responseText);
-                //         })
-                //         .catch((error)=>{
-                //             console.log('upload error', error)
-                //         });
-                // }
+                    if(this.uptoken) {
+                        const formInput = {
+                            file : {uri: data.path, type: 'application/octet-stream',
+                                name: `${this.prefix}${Date.now()}.jpg`},
+                        };
+
+                        Rpc.uploadFile(data.path, this.uptoken, formInput)
+                            .then((response) => {
+                                return response.text();
+                            })
+                            .then((responseText) => {
+                                console.log('upload success', responseText);
+                            })
+                            .catch((error)=> {
+                                console.log('upload error', error.message);
+                            });
+                    }
+            })
+            .catch((error)=>{
+                console.log("capture error", error.message);
             });
         }
     }
@@ -166,7 +169,8 @@ export default class Home extends Component {
             url: navState.url,
             backButtonEnabled: navState.canGoBack,
             forwardButtonEnabled: navState.canGoForward,
-            scalesPageToFit: true
+            scalesPageToFit: true,
+            showCamera: false
         });
 
         // url改变就移除计时器

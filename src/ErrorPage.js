@@ -21,13 +21,21 @@ export default class ErrorPage extends Component{
         return(
             <View style={styles.container}>
                 <View style={styles.bar}>
-                    <Text style={styles.backText}>{'返回'}</Text>
+                    <Text style={styles.backText} onPress={()=>this.onBack()}>{'返回'}</Text>
                 </View>
                 <View style={styles.content}>
-                    <Text style={styles.contentText}>{this.props.errorText}</Text>
+                    <Text style={styles.contentText} onPress={()=>this.onReload()}>{this.props.errorText}</Text>
                 </View>
             </View>
         );
+    }
+    
+    onBack(){
+        this.props.onBack && this.props.onBack();
+    }
+
+    onReload(){
+        this.props.onReload && this.props.onReload();
     }
 
 
@@ -38,7 +46,7 @@ const styles = StyleSheet.create({
         flex: 1
     },
     bar: {
-        height: 50,
+        height: 55,
         justifyContent: 'center',
         borderBottomWidth: 1/PixelRatio.get()
     },
