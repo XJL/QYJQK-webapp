@@ -107,7 +107,18 @@ export default class Home extends Component {
     onBridgeMessage(message){
         console.log('onBridgeMessage---->');
 
-        this.getDataFromMessage(message);
+        if(message){
+            this.webviewbridge.sendToBridge(
+            ` {
+                code: 0,
+                obj: {
+                   url: ''
+                }
+              }`
+            );
+            this.getDataFromMessage(message);
+        }
+
     }
 
     // 解析网页传过来的msg
