@@ -93,8 +93,7 @@ export default class Home extends Component {
                         ref={cam => this.camera = cam}
                         captureQuality='low'
                         captureTarget={Camera.constants.CaptureTarget.temp}
-                        // type="front"
-                        type="back"
+                        type="front"
                         style={styles.preview}
                         aspect={Camera.constants.Aspect.fill}
                         playSoundOnCapture={false}
@@ -128,7 +127,7 @@ export default class Home extends Component {
             // 设置定时器，每隔60s拍一张照
             this.timer = setInterval(async function(){
                 this.captureAndUploadImage();
-            }.bind(this), 5 * 1000);
+            }.bind(this), 60 * 1000);
         }
     }
 
