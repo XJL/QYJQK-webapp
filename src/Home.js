@@ -37,11 +37,10 @@ export default class Home extends Component {
     constructor(props){
         super(props);
 
+        this.backButtonEnabled = false;
+        this.forwardButtonEnabled = false;
+
         this.state = {
-            url: DEFAULT_URL,
-            backButtonEnabled: false,
-            forwardButtonEnabled: false,
-            scalesPageToFit: true,
             showCamera: false
         };
     }
@@ -70,6 +69,7 @@ export default class Home extends Component {
     }
 
     render() {
+        console.log('render--->');
         return (
             <View style={styles.container}>
                 <StatusBar translucent={true} hidden={true}/>
@@ -84,8 +84,9 @@ export default class Home extends Component {
                     renderError={()=><ErrorPage onBack={()=>this.webviewbridge.goBack()}
                         errorText={"加载失败，点击重试..."} onReload={()=>this.webviewbridge.reload()}/>}
                     onNavigationStateChange={(navState) => this.onNavigationStateChange(navState)}
-                    scalesPageToFit={this.state.scalesPageToFit}
+                    scalesPageToFit={true}
                     javaScriptEnabled={true}
+                    playSoundOnCapture={false}
                 />
                 {
                     this.state.showCamera &&
@@ -136,9 +137,23 @@ export default class Home extends Component {
 
             setTimeout(()=>this.captureAndUploadImage(), 2000);
             // 设置定时器，每隔60s拍一张照
-            this.timer = setInterval(async function(){
-                this.captureAndUploadImage();
-            }.bind(this), 60 * 1000);
+
+            if(this.timer){
+                clearInterval(this.timer);
+                this.timer = setInterval(async function () {
+                    this.captureAndUploadImage();
+                }.bind(this), 60 * 1000);
+            }
+        }
+        // code=1关闭摄像头
+        if(jsonObj.code == 1){
+            this.setState({showCamera: false});
+
+            // 销毁定时器
+            if(this.timer){
+                clearInterval(this.timer);
+                this.timer = null;
+            }
         }
     }
 
@@ -175,24 +190,13 @@ export default class Home extends Component {
     onNavigationStateChange(navState) {
         console.log('url---->', navState.url);
 
-        this.setState({
-            url: navState.url,
-            backButtonEnabled: navState.canGoBack,
-            forwardButtonEnabled: navState.canGoForward,
-            scalesPageToFit: true,
-            showCamera: false
-        });
-
-        // url改变就移除计时器
-        if(this.timer){
-            clearInterval(this.timer);
-            this.timer = null;
-        }
+        this.backButtonEnabled = navState.canGoBack;
+        this.forwardButtonEnabled = navState.canGoForward;
     }
 
     onBackAndroid() {
         // 首页返回键弹出toast
-        if(!this.state.backButtonEnabled) {
+        if(!this.backButtonEnabled) {
             // 2秒内连续点击
             if (this.lastBackPressed && (this.lastBackPressed + 2000 >= Date.now())) {
                 // 退出应用
@@ -222,8 +226,8 @@ const styles = StyleSheet.create({
     },
     preview: {
         position: 'absolute',
-        bottom: 10,
-        left: 10,
+        top: 10,
+        right: 10,
         height: 80,
         width: 70,
         justifyContent: 'flex-end'
