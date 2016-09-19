@@ -13,6 +13,7 @@ import {
 
 import Camera from 'react-native-camera';
 import WebViewBridge from 'react-native-webview-bridge';
+import DragableOpacity from './DragableOpacity';
 import ErrorPage from './ErrorPage';
 import LoadingPage from './LoadingPage';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
@@ -90,15 +91,17 @@ export default class Home extends Component {
                 />
                 {
                     this.state.showCamera &&
-                    <Camera
-                        ref={cam => this.camera = cam}
-                        captureQuality='low'
-                        captureTarget={Camera.constants.CaptureTarget.temp}
-                        type="front"
-                        style={styles.preview}
-                        aspect={Camera.constants.Aspect.fill}
-                        playSoundOnCapture={false}
-                    />
+                    <DragableOpacity style={styles.dragView} position={{style:{right: 20, top: 30}}}>
+                        <Camera
+                            ref={cam => this.camera = cam}
+                            captureQuality='low'
+                            captureTarget={Camera.constants.CaptureTarget.temp}
+                            type="front"
+                            style={styles.preview}
+                            aspect={Camera.constants.Aspect.fill}
+                            playSoundOnCapture={false}
+                        />
+                    </DragableOpacity>
                 }
             </View>
         );
@@ -225,12 +228,13 @@ const styles = StyleSheet.create({
         width: Dimensions.get('window').width,
     },
     preview: {
-        position: 'absolute',
-        top: 10,
-        right: 10,
         height: 80,
         width: 70,
-        justifyContent: 'flex-end'
+    },
+    dragView: {
+        position: 'absolute',
+        right: 10,
+        top: 20
     },
     loading: {
         height: Dimensions.get('window').height,
