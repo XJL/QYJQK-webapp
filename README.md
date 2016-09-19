@@ -1,7 +1,8 @@
 #注意点
 
-1. 使用了React-Native-WebView-Bridge组件，有些部分需要修改
-  a. node_modules/react-native-webview-bridge/webview-bridge/index.android.js
+##1. 使用了React-Native-WebView-Bridge组件，有些部分需要修改。
+
+###a. node_modules/react-native-webview-bridge/webview-bridge/index.android.js。
     (1) 把头部修改成
       import React, { Component } from 'react';
       var invariant = require('invariant');
@@ -58,4 +59,37 @@
         this.listener.remove();
         this.listener=null;
       },
+      
+      
+###b. node_modules/react-native-webview-bridge/webview-bridge/index.ios.js。
+    (1) 修改头部
+      import React, { Component } from 'react';
+      var invariant = require('invariant');
+      var keyMirror = require('keymirror');
+      var merge = require('merge');
+      var resolveAssetSource = require('react-native/Libraries/Image/resolveAssetSource');
+      
+      var {PropTypes} = React;
+      
+      var {
+        ActivityIndicatorIOS,
+        EdgeInsetsPropType,
+        StyleSheet,
+        Text,
+        View,
+        WebView,
+        requireNativeComponent,
+        UIManager,
+        NativeModules: {
+          WebViewBridgeManager
+        },
+        findNodeHandle,
+      }  = require('react-native');
+    (2) 中间修改 findNodeHandle前面的React类去掉
+      getWebViewBridgeHandle: function(): any {
+        return findNodeHandle(this.refs[RCT_WEBVIEWBRIDGE_REF]);
+      },
+      
+    
+      
     
