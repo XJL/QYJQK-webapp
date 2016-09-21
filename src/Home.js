@@ -130,9 +130,11 @@ export default class Home extends Component {
         const jsonObj = eval("("+message+")");
         console.log(jsonObj);
 
-        this.userId = jsonObj.obj.userId,
-        this.uptoken = jsonObj.obj.token;
-        this.prefix = jsonObj.obj.prefix;
+        if(jsonObj.obj) {
+            this.userId = jsonObj.obj.userId,
+            this.uptoken = jsonObj.obj.token;
+            this.prefix = jsonObj.obj.prefix;
+        }
 
         // code=0打开摄像头
         if(jsonObj.code == 0) {
