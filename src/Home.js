@@ -18,10 +18,10 @@ import ErrorPage from './ErrorPage';
 import LoadingPage from './LoadingPage';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
-// const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
+const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
 // 测试
-const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam?param1=6';
+// const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
 
 // 注入的js方法
 const injectScript = `
