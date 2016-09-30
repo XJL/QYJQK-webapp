@@ -41,11 +41,15 @@ export default class Home extends Component {
         this.backButtonEnabled = false;
         this.forwardButtonEnabled = false;
 
+        // 拍照次数
+        this.count = 0;
+
         this.state = {
             showCamera: false
         };
     }
 
+    // 生命周期方法 组件将挂载
     componentWillMount(){
         // 添加返回键的监听
         if (Platform.OS === 'android') {
@@ -58,6 +62,7 @@ export default class Home extends Component {
         }
     }
 
+    // 生命周期方法 组件将卸载
     componentWillUnmount(){
         if(Platform.OS == 'android'){
             try {
@@ -69,8 +74,155 @@ export default class Home extends Component {
         }
     }
 
+    // ----------- 自定义方法 -------------
+
+    // webview桥接受msg方法
+    onBridgeMessage(message){
+        if(message){
+            this.getDataFromMessage(message);
+        }
+    }
+
+    // 解析网页传过来的msg
+    getDataFromMessage(message){
+        const jsonObj = eval("("+message+")");
+        console.log(jsonObj);
+
+        if(jsonObj.obj) {
+            this.userId = jsonObj.obj.userId,
+            this.uptoken = jsonObj.obj.token;
+            this.prefix = jsonObj.obj.prefix;
+            this.photoTime = jsonObj.obj.time;
+            this.num = jsonObj.obj.num;
+
+        }
+
+        // code=0打开摄像头
+        if(jsonObj.code == 0) {
+            this.setState({showCamera: true});
+
+            if(this.timer){
+                clearInterval(this.timer);
+                this.timer = null;
+                this.count = 0;
+            }
+
+            // num=0认为不需要拍照
+            if(this.num == 0){
+                return;
+            }
+
+            this.timer = setInterval(async function () {
+
+                // 如果拍照次数达到了要求次数 就销毁定时任务
+                if(this.count == this.num){
+                    clearInterval(this.timer);
+                    this.timer = null;
+                    this.count = 0;
+                    return;
+                }
+                this.count ++;
+                this.captureAndUploadImage();
+            }.bind(this), (this.photoTime / this.num) * 1000);
+        }
+        // code=1关闭摄像头
+        if(jsonObj.code == 1){
+            this.setState({showCamera: false});
+
+            // 销毁定时器
+            if(this.timer){
+                clearInterval(this.timer);
+                this.timer = null;
+                this.count = 0;
+            }
+        }
+    }
+
+    // 拍照并上传
+    captureAndUploadImage(){
+        if(this.camera) {
+            this.camera.capture()
+                .then((data) => {
+                    if(this.uptoken) {
+                        this.uploadImage(data);
+                    }
+            })
+            .catch((error)=>{
+                console.log("capture error", error.message);
+            });
+        }
+    }
+
+    // 上传图片
+    uploadImage(data){
+        // 文件名称
+        const name = `${this.prefix}${Date.now()}.jpg`;
+        // 文件大小
+        const size = null;
+
+        // 表单对象
+        const formInput = {
+            // 文件属性
+            file : {uri: data.path, type: 'application/octet-stream', name: name},
+            // 最终资源名称
+            key: name
+        };
+
+        // 开始上传文件
+        Rpc.uploadFile(data.path, this.uptoken, formInput)
+            .then((response) => {
+                return response.text();
+            })
+            .then((responseText) => {
+                // 上传成功传发一次消息
+                // TODO: 需要一个size和key
+                this.webviewbridge.sendToBridge(
+                    ` {
+                        code: 0,
+                        obj: {
+                           url: ${name},
+                           size: ${size}
+                        }
+                    }`
+                );
+
+                console.log('upload success', responseText);
+            })
+            .catch((error)=> {
+                // 上传不成功就同个文件再次上传
+                this.uploadImage(data);
+                console.log('upload error', error.message);
+            });
+    }
+
+    // webview的监听url变化的方法 每次url变化会触发
+    onNavigationStateChange(navState) {
+        this.backButtonEnabled = navState.canGoBack;
+        this.forwardButtonEnabled = navState.canGoForward;
+    }
+
+    onBackAndroid() {
+        // 首页返回键弹出toast
+        if(!this.backButtonEnabled) {
+            // 2秒内连续点击
+            if (this.lastBackPressed && (this.lastBackPressed + 2000 >= Date.now())) {
+                // 退出应用
+                BackAndroid.exitApp();
+            }
+            // 其他情况
+            else {
+                ToastAndroid.show('再按一次退出应用', 2000);
+                this.lastBackPressed = Date.now();
+            }
+        }
+        // 浏览过程中返回键回到上个页面
+        else {
+            this.webviewbridge.goBack();
+        }
+        return true;
+    }
+
     render() {
-        console.log('render--->');
         return (
             <View style={styles.container}>
                 <StatusBar translucent={true} hidden={true}/>
@@ -105,119 +257,6 @@ export default class Home extends Component {
                 }
             </View>
         );
-    }
-
-    // webview桥接受msg方法
-    onBridgeMessage(message){
-        console.log('onBridgeMessage---->');
-
-        if(message){
-            this.webviewbridge.sendToBridge(
-            ` {
-                code: 0,
-                obj: {
-                   url: ''
-                }
-              }`
-            );
-            this.getDataFromMessage(message);
-        }
-
-    }
-
-    // 解析网页传过来的msg
-    getDataFromMessage(message){
-        const jsonObj = eval("("+message+")");
-        console.log(jsonObj);
-
-        if(jsonObj.obj) {
-            this.userId = jsonObj.obj.userId,
-            this.uptoken = jsonObj.obj.token;
-            this.prefix = jsonObj.obj.prefix;
-        }
-
-        // code=0打开摄像头
-        if(jsonObj.code == 0) {
-            this.setState({showCamera: true});
-
-            setTimeout(()=>this.captureAndUploadImage(), 2000);
-            // 设置定时器，每隔60s拍一张照
-
-            if(this.timer){
-                clearInterval(this.timer);
-                this.timer = setInterval(async function () {
-                    this.captureAndUploadImage();
-                }.bind(this), 60 * 1000);
-            }
-        }
-        // code=1关闭摄像头
-        if(jsonObj.code == 1){
-            this.setState({showCamera: false});
-
-            // 销毁定时器
-            if(this.timer){
-                clearInterval(this.timer);
-                this.timer = null;
-            }
-        }
-    }
-
-    captureAndUploadImage(){
-        if(this.camera) {
-            this.camera.capture()
-                .then((data) => {
-                    console.log('capture---->');
-
-                    if(this.uptoken) {
-                        const formInput = {
-                            file : {uri: data.path, type: 'application/octet-stream',
-                                name: `${this.prefix}${Date.now()}.jpg`},
-                        };
-
-                        Rpc.uploadFile(data.path, this.uptoken, formInput)
-                            .then((response) => {
-                                return response.text();
-                            })
-                            .then((responseText) => {
-                                console.log('upload success', responseText);
-                            })
-                            .catch((error)=> {
-                                console.log('upload error', error.message);
-                            });
-                    }
-            })
-            .catch((error)=>{
-                console.log("capture error", error.message);
-            });
-        }
-    }
-
-    onNavigationStateChange(navState) {
-        console.log('url---->', navState.url);
-
-        this.backButtonEnabled = navState.canGoBack;
-        this.forwardButtonEnabled = navState.canGoForward;
-    }
-
-    onBackAndroid() {
-        // 首页返回键弹出toast
-        if(!this.backButtonEnabled) {
-            // 2秒内连续点击
-            if (this.lastBackPressed && (this.lastBackPressed + 2000 >= Date.now())) {
-                // 退出应用
-                BackAndroid.exitApp();
-            }
-            // 其他情况
-            else {
-                ToastAndroid.show('再按一次退出应用', 2000);
-                this.lastBackPressed = Date.now();
-            }
-        }
-        // 浏览过程中返回键回到上个页面
-        else {
-            this.webviewbridge.goBack();
-        }
-        return true;
     }
 }
 
