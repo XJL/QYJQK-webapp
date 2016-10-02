@@ -4,6 +4,7 @@ import {
     Text,
     View,
     Dimensions,
+    AppState,
     BackAndroid,
     Platform,
     ToastAndroid,
@@ -11,6 +12,7 @@ import {
     WebView
 } from 'react-native';
 
+import RNFS from 'react-native-fs';
 import Camera from 'react-native-camera';
 import WebViewBridge from 'react-native-webview-bridge';
 import DragableOpacity from './DragableOpacity';
@@ -18,10 +20,10 @@ import ErrorPage from './ErrorPage';
 import LoadingPage from './LoadingPage';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
-const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
+// const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
 // 测试
-// const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
+const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
 
 // 注入的js方法
 const injectScript = `
@@ -60,6 +62,14 @@ export default class Home extends Component {
                 console.log('add event listener error', error.message);
             }
         }
+
+        try {
+            this.lastAppState = AppState.currentState;
+            AppState.addEventListener('change', (state) => this.onAppStateChange.bind(this, state));
+        }
+        catch (error){
+            console.log('add AppState listener error', error.message);
+        }
     }
 
     // 生命周期方法 组件将卸载
@@ -71,6 +81,13 @@ export default class Home extends Component {
             catch (error){
                 console.log('remove event listener error', error.message);
             }
+        }
+
+        try{
+            AppState.removeEventListener('change', (state) => this.onAppStateChange.bind(this, state));
+        }
+        catch(error){
+            console.log('remove AppState listener error', error.message);
         }
     }
 
@@ -112,8 +129,8 @@ export default class Home extends Component {
                 return;
             }
 
+            // 设置定时任务
             this.timer = setInterval(async function () {
-
                 // 如果拍照次数达到了要求次数 就销毁定时任务
                 if(this.count == this.num){
                     clearInterval(this.timer);
@@ -143,9 +160,28 @@ export default class Home extends Component {
         if(this.camera) {
             this.camera.capture()
                 .then((data) => {
-                    if(this.uptoken) {
-                        this.uploadImage(data);
-                    }
+                    console.log('path--->', data.path);
+                    
+                    const path = data.path.substring(data.path.indexOf('file://') + 'file://'.length,
+                            data.path.indexOf('cache/') + 'cache/'.length);
+
+                    RNFS.readDir(path)
+                        .then((result) => {
+                            // 最新拍的这张图片在最后一个
+                            const image = result[result.length - 1];
+
+                            // 图片的大小 单位为byte
+                            const size = image.size;
+                            console.log('image size---->', size);
+
+                            if(this.uptoken) {
+                                this.uploadImage(data, size);
+                            }
+                        })
+                        .catch((error) => {
+                            console.log('readDir error', error.message);
+                        });
+
             })
             .catch((error)=>{
                 console.log("capture error", error.message);
@@ -154,11 +190,9 @@ export default class Home extends Component {
     }
 
     // 上传图片
-    uploadImage(data){
+    uploadImage(data, size){
         // 文件名称
         const name = `${this.prefix}${Date.now()}.jpg`;
-        // 文件大小
-        const size = null;
 
         // 表单对象
         const formInput = {
@@ -175,23 +209,13 @@ export default class Home extends Component {
             })
             .then((responseText) => {
                 // 上传成功传发一次消息
-                // TODO: 需要一个size和key
-                this.webviewbridge.sendToBridge(
-                    ` {
-                        code: 0,
-                        obj: {
-                           url: ${name},
-                           size: ${size}
-                        }
-                    }`
-                );
-
-                console.log('upload success', responseText);
+                this.webviewbridge.sendToBridge(`{"code": ${0}, "obj": {"url": "${name}", "size": ${size}}}`);
+                // console.log('upload success', responseText);
             })
             .catch((error)=> {
                 // 上传不成功就同个文件再次上传
                 this.uploadImage(data);
-                console.log('upload error', error.message);
+                // console.log('upload error', error.message);
             });
     }
 
@@ -222,6 +246,23 @@ export default class Home extends Component {
         return true;
     }
 
+    // 聚焦状态监听方法
+    onAppStateChange(state) {
+        console.log('state---->', state);
+        // 程序放后台时
+        if(state !== 'active' && this.lastAppState == 'active'){
+            console.log('后台---->');
+        }
+        // 程序回到焦点是
+        else if (state === 'active' && this.lastAppState !== 'active') {
+            console.log('前台---->');
+        }
+
+        this.lastAppState = state;
+    }
+
+    // ----------- 主render方法 ------------
+
     render() {
         return (
             <View style={styles.container}>
@@ -235,7 +276,7 @@ export default class Home extends Component {
                     startInLoadingState={true}
                     renderLoading={()=><LoadingPage />}
                     renderError={()=><ErrorPage onBack={()=>this.webviewbridge.goBack()}
-                        errorText={"加载失败，点击重试..."} onReload={()=>this.webviewbridge.reload()}/>}
+                    errorText={"加载失败，点击重试..."} onReload={()=>this.webviewbridge.reload()}/>}
                     onNavigationStateChange={(navState) => this.onNavigationStateChange(navState)}
                     scalesPageToFit={true}
                     javaScriptEnabled={true}
