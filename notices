@@ -1,5 +1,13 @@
 注意点：
 
+IOS 安装手动配置
+https://github.com/johanneslumpe/react-native-fs
+https://github.com/alinz/react-native-webview-bridge
+
+RCTWebViewBridge.m 添加
+#import <objc/runtime.h>
+
+
 1. react native webview bridge 的修改
     a. node_modules/react-native-webview-bridge/webview-bridge/index.ios.js
         头部修改为：
