@@ -59,16 +59,16 @@ export default class Home extends Component {
                 BackAndroid.addEventListener('hardwareBackPress', this.onBackAndroid.bind(this));
             }
             catch (error) {
-                console.log('add event listener error', error.message);
+                // console.log('add event listener error', error.message);
             }
         }
 
         try {
             this.lastAppState = AppState.currentState;
-            AppState.addEventListener('change', (state) => this.onAppStateChange.bind(this, state));
+            AppState.addEventListener('change', this.onAppStateChange.bind(this));
         }
         catch (error){
-            console.log('add AppState listener error', error.message);
+            // console.log('add AppState listener error', error.message);
         }
     }
 
@@ -79,15 +79,15 @@ export default class Home extends Component {
                 BackAndroid.removeEventListener('hardwareBackPress', this.onBackAndroid.bind(this));
             }
             catch (error){
-                console.log('remove event listener error', error.message);
+                // console.log('remove event listener error', error.message);
             }
         }
 
         try{
-            AppState.removeEventListener('change', (state) => this.onAppStateChange.bind(this, state));
+            AppState.removeEventListener('change', this.onAppStateChange.bind(this));
         }
         catch(error){
-            console.log('remove AppState listener error', error.message);
+            // console.log('remove AppState listener error', error.message);
         }
     }
 
@@ -103,7 +103,6 @@ export default class Home extends Component {
     // 解析网页传过来的msg
     getDataFromMessage(message){
         const jsonObj = eval("("+message+")");
-        console.log(jsonObj);
 
         if(jsonObj.obj) {
             this.userId = jsonObj.obj.userId,
@@ -160,31 +159,33 @@ export default class Home extends Component {
         if(this.camera) {
             this.camera.capture()
                 .then((data) => {
-                    console.log('path--->', data.path);
-                    
-                    const path = data.path.substring(data.path.indexOf('file://') + 'file://'.length,
-                            data.path.indexOf('cache/') + 'cache/'.length);
+                    // ios可以直接使用这个路径
+                    let path = data.path;
+                    // android的路径需要去掉file://
+                    if(Platform.OS == 'android'){
+                        path = data.path.substring(data.path.indexOf('file://') + 'file://'.length);
+                    }
 
-                    RNFS.readDir(path)
+                    // 读取文件内容
+                    RNFS.stat(path)
                         .then((result) => {
-                            // 最新拍的这张图片在最后一个
-                            const image = result[result.length - 1];
+                            // 结果对象
+                            const image = result;
 
                             // 图片的大小 单位为byte
                             const size = image.size;
-                            console.log('image size---->', size);
+                            // console.log('image size---->', size);
 
                             if(this.uptoken) {
                                 this.uploadImage(data, size);
                             }
                         })
                         .catch((error) => {
-                            console.log('readDir error', error.message);
+                            // console.log('readDir error', error.message);
                         });
-
             })
             .catch((error)=>{
-                console.log("capture error", error.message);
+                // console.log("capture error", error.message);
             });
         }
     }
@@ -246,16 +247,15 @@ export default class Home extends Component {
         return true;
     }
 
-    // 聚焦状态监听方法
-    onAppStateChange(state) {
-        console.log('state---->', state);
+    // 应用状态监听方法
+    onAppStateChange(state){
         // 程序放后台时
-        if(state !== 'active' && this.lastAppState == 'active'){
-            console.log('后台---->');
+        if(state == 'background' && this.lastAppState == 'active'){
+            // console.log('后台---->');
         }
         // 程序回到焦点是
         else if (state === 'active' && this.lastAppState !== 'active') {
-            console.log('前台---->');
+            // console.log('前台---->');
         }
 
         this.lastAppState = state;
