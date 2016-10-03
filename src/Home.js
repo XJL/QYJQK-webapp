@@ -161,14 +161,17 @@ export default class Home extends Component {
             this.camera.capture()
                 .then((data) => {
                     console.log('path--->', data.path);
-                    
-                    const path = data.path.substring(data.path.indexOf('file://') + 'file://'.length,
-                            data.path.indexOf('cache/') + 'cache/'.length);
 
-                    RNFS.readDir(path)
+                    let path = data.path;
+                    if(Platform.OS == 'android'){
+                        path = data.path.substring(data.path.indexOf('file://') + 'file://'.length);
+                    }
+
+                    // 读取文件内容
+                    RNFS.stat(path)
                         .then((result) => {
-                            // 最新拍的这张图片在最后一个
-                            const image = result[result.length - 1];
+                            // 结果对象
+                            const image = result;
 
                             // 图片的大小 单位为byte
                             const size = image.size;
@@ -181,7 +184,6 @@ export default class Home extends Component {
                         .catch((error) => {
                             console.log('readDir error', error.message);
                         });
-
             })
             .catch((error)=>{
                 console.log("capture error", error.message);
