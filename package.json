@@ -10,6 +10,7 @@
     "react-native": "^0.32.0",
     "react-native-camera": "git+https://github.com/lwansbrough/react-native-camera.git",
     "react-native-fs": "^2.0.1-rc.2",
-    "react-native-qiniu": "^0.2.2"
+    "react-native-qiniu": "^0.2.2",
+    "react-native-webview-bridge": "^0.33.0"
   }
 }
