@@ -183,7 +183,7 @@ export default class Home extends Component {
                     if(Platform.OS == 'android'){
                         path = data.path.substring(data.path.indexOf('file://') + 'file://'.length);
                     }
-                    this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"error": "读取图片的路径: ${path}"}}`);
+                    this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "读取图片的路径: ${path}"}}`);
 
                     // 读取文件内容
                     RNFS.stat(path)
