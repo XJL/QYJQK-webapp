@@ -59,7 +59,7 @@ export default class Home extends Component {
                 BackAndroid.addEventListener('hardwareBackPress', this.onBackAndroid.bind(this));
             }
             catch (error) {
-                // console.log('add event listener error', error.message);
+                if(__DEV__) console.log('add event listener error', error.message);
             }
         }
 
@@ -68,7 +68,7 @@ export default class Home extends Component {
             AppState.addEventListener('change', this.onAppStateChange.bind(this));
         }
         catch (error){
-            // console.log('add AppState listener error', error.message);
+            if(__DEV__) console.log('add AppState listener error', error.message);
         }
     }
 
@@ -79,7 +79,7 @@ export default class Home extends Component {
                 BackAndroid.removeEventListener('hardwareBackPress', this.onBackAndroid.bind(this));
             }
             catch (error){
-                // console.log('remove event listener error', error.message);
+                if(__DEV__) console.log('remove event listener error', error.message);
             }
         }
 
@@ -87,7 +87,7 @@ export default class Home extends Component {
             AppState.removeEventListener('change', this.onAppStateChange.bind(this));
         }
         catch(error){
-            // console.log('remove AppState listener error', error.message);
+            if(__DEV__) console.log('remove AppState listener error', error.message);
         }
     }
 
@@ -115,6 +115,7 @@ export default class Home extends Component {
             }
         }
         catch (error) {
+            if(__DEV__) console.log('parse error', error.message);
             this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "接受解析js发送的msg异常: ${error.message}"}}`);
         }
 
@@ -150,6 +151,7 @@ export default class Home extends Component {
             }
         }
         catch (error) {
+            if(__DEV__) console.log('open camera error', error.message);
             this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "打开摄像头异常: ${error.message}"}}`);
         }
 
@@ -168,6 +170,7 @@ export default class Home extends Component {
             }
         }
         catch (error) {
+            if(__DEV__) console.log('close camera error', error.message);
             this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "关闭摄像头异常: ${error.message}"}}`);
         }
     }
@@ -183,6 +186,7 @@ export default class Home extends Component {
                     if(Platform.OS == 'android'){
                         path = data.path.substring(data.path.indexOf('file://') + 'file://'.length);
                     }
+                    if(__DEV__) console.log('capture success');
                     this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "读取图片的路径: ${path}"}}`);
 
                     // 读取文件内容
@@ -200,12 +204,12 @@ export default class Home extends Component {
                             }
                         })
                         .catch((error) => {
-                            // console.log('readDir error', error.message);
+                            if(__DEV__) console.log('readDir error', error.message);
                             this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "读取文件异常: ${error.message}"}}`);
                         });
             })
             .catch((error)=>{
-                // console.log("capture error", error.message);
+                if(__DEV__) console.log("capture error", error.message);
                 this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "拍照异常: ${error.message}"}}`);
             });
         }
@@ -232,13 +236,13 @@ export default class Home extends Component {
             .then((responseText) => {
                 // 上传成功传发一次消息
                 this.webviewbridge.sendToBridge(`{"code": ${0}, "obj": {"url": "${name}", "size": ${size}}}`);
-                // console.log('upload success', responseText);
+                if(__DEV__) console.log('upload success', responseText);
             })
             .catch((error)=> {
                 // 上传不成功就同个文件再次上传
                 this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": 上传图片异常 "${error.message}"}}`);
                 // this.uploadImage(data);
-                // console.log('upload error', error.message);
+                if(__DEV__) console.log('upload error', error.message);
             });
     }
 
