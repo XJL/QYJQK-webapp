@@ -235,7 +235,7 @@ export default class Home extends Component {
             })
             .then((responseText) => {
                 // 上传成功传发一次消息
-                this.webviewbridge.sendToBridge(`{"code": ${0}, "obj": {"url": "${name}", "size": ${size}}}`);
+                this.webviewbridge.sendToBridge(`{"code": ${0}, "obj": {"url": "${name}", "size": ${size}}, "responseText": ${responseText}}`);
                 if(__DEV__) console.log('upload success', responseText);
             })
             .catch((error)=> {
