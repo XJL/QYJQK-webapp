@@ -134,8 +134,8 @@ export default class Home extends Component {
                 .then(permission => {
                     if (permission != 'authorized') {
                         Alert.alert(
-                            '请允许摄像头权限',
-                            "在应用权限中勾选摄像头",
+                            '摄像头权限未开启',
+                            "请在应用权限中勾选摄像头",
                             [
                                 // {text: '关闭', style: 'cancel'},
                                 {text: '打开设置', onPress: Permissions.openSettings },
