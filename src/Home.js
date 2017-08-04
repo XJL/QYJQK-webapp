@@ -9,9 +9,10 @@ import {
     Platform,
     ToastAndroid,
     StatusBar,
-    WebView
+    WebView,
+    Alert
 } from 'react-native';
-
+import Permissions from 'react-native-permissions';
 import RNFS from 'react-native-fs';
 import Camera from 'react-native-camera';
 import WebViewBridge from 'react-native-webview-bridge';
@@ -20,10 +21,17 @@ import ErrorPage from './ErrorPage';
 import LoadingPage from './LoadingPage';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
+<<<<<<< HEAD
 const DEFAULT_URL = 'https://www.qyjqk.com/mb/index/exam';
 
 // 测试
 //const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
+=======
+const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
+
+// 测试
+// const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
+>>>>>>> XJL/master
 
 // 注入的js方法
 const injectScript = `
@@ -47,7 +55,8 @@ export default class Home extends Component {
         this.count = 0;
 
         this.state = {
-            showCamera: false
+            showCamera: false,
+            types: [],
         };
     }
 
@@ -59,7 +68,7 @@ export default class Home extends Component {
                 BackAndroid.addEventListener('hardwareBackPress', this.onBackAndroid.bind(this));
             }
             catch (error) {
-                // console.log('add event listener error', error.message);
+                if(__DEV__) console.log('add event listener error', error.message);
             }
         }
 
@@ -68,11 +77,20 @@ export default class Home extends Component {
             AppState.addEventListener('change', this.onAppStateChange.bind(this));
         }
         catch (error){
-            // console.log('add AppState listener error', error.message);
+            if(__DEV__) console.log('add AppState listener error', error.message);
         }
 
+<<<<<<< HEAD
         //test
         //this.state.showCamera = true;
+=======
+        // 更新权限状态
+        this.updatePermission();
+
+        // 检查摄像头权限
+        this.checkCameraPermission();
+        setInterval(()=>this.checkCameraPermission(), 5000);
+>>>>>>> XJL/master
     }
 
     // 生命周期方法 组件将卸载
@@ -82,7 +100,7 @@ export default class Home extends Component {
                 BackAndroid.removeEventListener('hardwareBackPress', this.onBackAndroid.bind(this));
             }
             catch (error){
-                // console.log('remove event listener error', error.message);
+                if(__DEV__) console.log('remove event listener error', error.message);
             }
         }
 
@@ -90,7 +108,7 @@ export default class Home extends Component {
             AppState.removeEventListener('change', this.onAppStateChange.bind(this));
         }
         catch(error){
-            // console.log('remove AppState listener error', error.message);
+            if(__DEV__) console.log('remove AppState listener error', error.message);
         }
     }
 
@@ -103,57 +121,122 @@ export default class Home extends Component {
         }
     }
 
+    /**
+     * 更新权限状态信息
+     */
+    updatePermission() {
+        try {
+            let types = Permissions.getPermissionTypes();
+            Permissions.checkMultiplePermissions(types)
+                .then(permissions => {
+                    this.setState({...permissions});
+                });
+        }
+        catch (error){
+            if(__DEV__) console.log('get permissions error', error.message);
+        }
+    }
+
+    /**
+     * 检查摄像头权限
+     */
+    checkCameraPermission() {
+        try {
+            Permissions.requestPermission('camera')
+                .then(permission => {
+                    if (permission != 'authorized') {
+                        Alert.alert(
+                            '摄像头权限未开启',
+                            "请在应用权限中勾选摄像头",
+                            [
+                                // {text: '关闭', style: 'cancel'},
+                                {text: '打开设置', onPress: Permissions.openSettings },
+                            ]
+                        )
+                    }
+                    else {
+                        this.setState({camera: 'authorized'});
+                    }
+                });
+        }
+        catch (error){
+            if(__DEV__) console.log('set permission error', error.message);
+        }
+    }
+
     // 解析网页传过来的msg
     getDataFromMessage(message){
-        const jsonObj = eval("("+message+")");
+        let jsonObj = eval("(" + message + ")");
+        try {
+            this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "接受js发送的msg: ${message}"}}`);
 
-        if(jsonObj.obj) {
-            this.userId = jsonObj.obj.userId,
-            this.uptoken = jsonObj.obj.token;
-            this.prefix = jsonObj.obj.prefix;
-            this.photoTime = jsonObj.obj.time;
-            this.num = jsonObj.obj.num;
-
+            if (jsonObj.obj) {
+                this.userId = jsonObj.obj.userId,
+                    this.uptoken = jsonObj.obj.token;
+                this.prefix = jsonObj.obj.prefix;
+                this.photoTime = jsonObj.obj.time;
+                this.num = jsonObj.obj.num;
+            }
+        }
+        catch (error) {
+            if(__DEV__) console.log('parse error', error.message);
+            this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "接受解析js发送的msg异常: ${error.message}"}}`);
         }
 
-        // code=0打开摄像头
-        if(jsonObj.code == 0) {
-            this.setState({showCamera: true});
+        try {
+            // code=0打开摄像头
+            if (jsonObj.code == 0) {
 
-            if(this.timer){
-                clearInterval(this.timer);
-                this.timer = null;
-                this.count = 0;
-            }
+                this.setState({showCamera: true});
+                this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "接受解析js发送的 code = 0,打开摄像头正常"}}`);
 
-            // num=0认为不需要拍照
-            if(this.num == 0){
-                return;
-            }
-
-            // 设置定时任务
-            this.timer = setInterval(async function () {
-                // 如果拍照次数达到了要求次数 就销毁定时任务
-                if(this.count == this.num){
+                if (this.timer) {
                     clearInterval(this.timer);
                     this.timer = null;
                     this.count = 0;
+                }
+
+                // num=0认为不需要拍照
+                if (this.num == 0) {
                     return;
                 }
-                this.count ++;
-                this.captureAndUploadImage();
-            }.bind(this), (this.photoTime / this.num) * 1000);
-        }
-        // code=1关闭摄像头
-        if(jsonObj.code == 1){
-            this.setState({showCamera: false});
 
-            // 销毁定时器
-            if(this.timer){
-                clearInterval(this.timer);
-                this.timer = null;
-                this.count = 0;
+                // 设置定时任务
+                this.timer = setInterval(async function () {
+                    // 如果拍照次数达到了要求次数 就销毁定时任务
+                    if (this.count == this.num) {
+                        clearInterval(this.timer);
+                        this.timer = null;
+                        this.count = 0;
+                        return;
+                    }
+                    this.count++;
+                    this.captureAndUploadImage();
+                }.bind(this), (this.photoTime / this.num) * 1000);
             }
+        }
+        catch (error) {
+            if(__DEV__) console.log('open camera error', error.message);
+            this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "打开摄像头异常: ${error.message}"}}`);
+        }
+
+        try {
+            // code=1关闭摄像头
+            if (jsonObj.code == 1) {
+                this.setState({showCamera: false});
+                this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "接受解析js发送的 code = 1,关闭摄像头正常"}}`);
+
+                // 销毁定时器
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = null;
+                    this.count = 0;
+                }
+            }
+        }
+        catch (error) {
+            if(__DEV__) console.log('close camera error', error.message);
+            this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "关闭摄像头异常: ${error.message}"}}`);
         }
     }
 
@@ -168,6 +251,8 @@ export default class Home extends Component {
                     if(Platform.OS == 'android'){
                         path = data.path.substring(data.path.indexOf('file://') + 'file://'.length);
                     }
+                    if(__DEV__) console.log('capture success');
+                    this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "读取图片的路径: ${path}"}}`);
 
                     // 读取文件内容
                     RNFS.stat(path)
@@ -184,11 +269,13 @@ export default class Home extends Component {
                             }
                         })
                         .catch((error) => {
-                            // console.log('readDir error', error.message);
+                            if(__DEV__) console.log('readDir error', error.message);
+                            this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "读取文件异常: ${error.message}"}}`);
                         });
             })
             .catch((error)=>{
-                // console.log("capture error", error.message);
+                if(__DEV__) console.log("capture error", error.message);
+                this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "拍照异常: ${error.message}"}}`);
             });
         }
     }
@@ -213,13 +300,14 @@ export default class Home extends Component {
             })
             .then((responseText) => {
                 // 上传成功传发一次消息
-                this.webviewbridge.sendToBridge(`{"code": ${0}, "obj": {"url": "${name}", "size": ${size}}}`);
-                // console.log('upload success', responseText);
+                this.webviewbridge.sendToBridge(`{"code": ${0}, "obj": {"url": "${name}", "size": ${size}}, "responseText": ${responseText}}`);
+                if(__DEV__) console.log('upload success', responseText);
             })
             .catch((error)=> {
                 // 上传不成功就同个文件再次上传
-                this.uploadImage(data);
-                // console.log('upload error', error.message);
+                this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": 上传图片异常 "${error.message}"}}`);
+                // this.uploadImage(data);
+                if(__DEV__) console.log('upload error', error.message);
             });
     }
 
@@ -300,6 +388,10 @@ export default class Home extends Component {
                         />
                     </DragableOpacity>
                 }
+                {
+                    // 是否有相机权限
+                    this.state.camera != 'authorized' && <View style={styles.mark}/>
+                }
             </View>
         );
     }
@@ -332,4 +424,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 20,
     },
+    mark: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        right: 0,
+        left: 0,
+        backgroundColor: 'transparent',
+    }
 });

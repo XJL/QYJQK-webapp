@@ -10,6 +10,7 @@ import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
 import com.github.alinz.reactnativewebviewbridge.WebViewBridgePackage;
+import com.joshblour.reactnativepermissions.ReactNativePermissionsPackage;
 import com.rnfs.RNFSPackage;
 
 import java.util.Arrays;
@@ -28,6 +29,7 @@ public class MainApplication extends Application implements ReactApplication {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
             new RCTCameraPackage(),
+            new ReactNativePermissionsPackage(),
             new WebViewBridgePackage(),
               new RNFSPackage()
       );
