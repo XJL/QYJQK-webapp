@@ -335,7 +335,6 @@ export default class Home extends Component {
         // 程序回到焦点是
         else if (state === 'active' && this.lastAppState !== 'active') {
             // console.log('前台---->');
-            this.checkCameraPermission();
         }
 
         this.lastAppState = state;
@@ -375,9 +374,6 @@ export default class Home extends Component {
                             playSoundOnCapture={false}
                         />
                     </DragableOpacity>
-                }
-                {
-                    console.log('1',this.state.camera != 'authorized')
                 }
                 {
                     // 是否有相机权限
