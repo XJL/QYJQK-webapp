@@ -9,9 +9,10 @@ import {
     Platform,
     ToastAndroid,
     StatusBar,
-    WebView
+    WebView,
+    Alert
 } from 'react-native';
-
+import Permissions from 'react-native-permissions';
 import RNFS from 'react-native-fs';
 import Camera from 'react-native-camera';
 import WebViewBridge from 'react-native-webview-bridge';
@@ -47,7 +48,8 @@ export default class Home extends Component {
         this.count = 0;
 
         this.state = {
-            showCamera: false
+            showCamera: false,
+            types: [],
         };
     }
 
@@ -70,6 +72,13 @@ export default class Home extends Component {
         catch (error){
             if(__DEV__) console.log('add AppState listener error', error.message);
         }
+
+        // 更新权限状态
+        this.updatePermission();
+
+        // 检查摄像头权限
+        this.checkCameraPermission();
+        setInterval(()=>this.checkCameraPermission(), 5000);
     }
 
     // 生命周期方法 组件将卸载
@@ -100,6 +109,49 @@ export default class Home extends Component {
         }
     }
 
+    /**
+     * 更新权限状态信息
+     */
+    updatePermission() {
+        try {
+            let types = Permissions.getPermissionTypes();
+            Permissions.checkMultiplePermissions(types)
+                .then(permissions => {
+                    this.setState({...permissions});
+                });
+        }
+        catch (error){
+            if(__DEV__) console.log('get permissions error', error.message);
+        }
+    }
+
+    /**
+     * 检查摄像头权限
+     */
+    checkCameraPermission() {
+        try {
+            Permissions.requestPermission('camera')
+                .then(permission => {
+                    if (permission != 'authorized') {
+                        Alert.alert(
+                            '请允许摄像头权限',
+                            "在应用权限中勾选摄像头",
+                            [
+                                // {text: '关闭', style: 'cancel'},
+                                {text: '打开设置', onPress: Permissions.openSettings },
+                            ]
+                        )
+                    }
+                    else {
+                        this.setState({camera: 'authorized'});
+                    }
+                });
+        }
+        catch (error){
+            if(__DEV__) console.log('set permission error', error.message);
+        }
+    }
+
     // 解析网页传过来的msg
     getDataFromMessage(message){
         let jsonObj = eval("(" + message + ")");
@@ -122,6 +174,7 @@ export default class Home extends Component {
         try {
             // code=0打开摄像头
             if (jsonObj.code == 0) {
+
                 this.setState({showCamera: true});
                 this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "接受解析js发送的 code = 0,打开摄像头正常"}}`);
 
@@ -282,6 +335,7 @@ export default class Home extends Component {
         // 程序回到焦点是
         else if (state === 'active' && this.lastAppState !== 'active') {
             // console.log('前台---->');
+            this.checkCameraPermission();
         }
 
         this.lastAppState = state;
@@ -322,6 +376,13 @@ export default class Home extends Component {
                         />
                     </DragableOpacity>
                 }
+                {
+                    console.log('1',this.state.camera != 'authorized')
+                }
+                {
+                    // 是否有相机权限
+                    this.state.camera != 'authorized' && <View style={styles.mark}/>
+                }
             </View>
         );
     }
@@ -354,4 +415,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 20,
     },
+    mark: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        right: 0,
+        left: 0,
+        backgroundColor: 'transparent',
+    }
 });
