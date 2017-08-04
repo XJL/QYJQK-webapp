@@ -20,10 +20,10 @@ import ErrorPage from './ErrorPage';
 import LoadingPage from './LoadingPage';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
-// const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
+const DEFAULT_URL = 'https://www.qyjqk.com/mb/index/exam';
 
 // 测试
-const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
+//const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
 
 // 注入的js方法
 const injectScript = `
@@ -70,6 +70,9 @@ export default class Home extends Component {
         catch (error){
             // console.log('add AppState listener error', error.message);
         }
+
+        //test
+        //this.state.showCamera = true;
     }
 
     // 生命周期方法 组件将卸载
@@ -264,6 +267,7 @@ export default class Home extends Component {
     // ----------- 主render方法 ------------
 
     render() {
+
         return (
             <View style={styles.container}>
                 <StatusBar translucent={true} hidden={true}/>
