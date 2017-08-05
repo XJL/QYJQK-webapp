@@ -1,0 +1,22 @@
+
+
+
+
+手动配置
+https://github.com/johanneslumpe/react-native-fs
+https://github.com/alinz/react-native-webview-bridge
+
+#import "RCTWebViewBridge.m" 添加
+#import <objc/runtime.h>
+
+react-native-webview-bridge 用master最新代码
+屏蔽RCTWebViewBridgeManager.m的
+//RCT_REMAP_VIEW_PROPERTY(keyboardDisplayRequiresUserAction, _webView.keyboardDisplayRequiresUserAction, BOOL)
+
+1. 添加react-native fs模块 Ios部分尚未添加 2. 添加后台暂停定时器方法 未完成 3. 修改js通信方法
+
+
+reactnativePermission报错解决方法：
+#import "RCTBridge.h"
+#import "RCTConvert.h"
+#import "RCTEventDispatcher.h"
