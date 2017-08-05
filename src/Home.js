@@ -21,17 +21,12 @@ import ErrorPage from './ErrorPage';
 import LoadingPage from './LoadingPage';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
-<<<<<<< HEAD
-const DEFAULT_URL = 'https://www.qyjqk.com/mb/index/exam';
 
-// 测试
-//const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
-=======
 const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
 // 测试
 // const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
->>>>>>> XJL/master
+
 
 // 注入的js方法
 const injectScript = `
@@ -80,17 +75,16 @@ export default class Home extends Component {
             if(__DEV__) console.log('add AppState listener error', error.message);
         }
 
-<<<<<<< HEAD
         //test
         //this.state.showCamera = true;
-=======
+
         // 更新权限状态
         this.updatePermission();
 
         // 检查摄像头权限
         this.checkCameraPermission();
         setInterval(()=>this.checkCameraPermission(), 5000);
->>>>>>> XJL/master
+
     }
 
     // 生命周期方法 组件将卸载
