@@ -78,6 +78,7 @@ export default class Home extends Component {
         //test
         //this.state.showCamera = true;
 
+
         // 更新权限状态
         this.updatePermission();
 
