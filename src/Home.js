@@ -163,7 +163,7 @@ export default class Home extends Component {
     getDataFromMessage(message){
         let jsonObj = eval("(" + message + ")");
         try {
-            this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "接受js发送的msg: ${message}"}}`);
+            this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "v1.0.6接受js发送的msg: ${message}"}}`);
 
             if (jsonObj.obj) {
                 this.userId = jsonObj.obj.userId,
@@ -300,7 +300,7 @@ export default class Home extends Component {
             })
             .catch((error)=> {
                 // 上传不成功就同个文件再次上传
-                this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": 上传图片异常 "${error.message}"}}`);
+                this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": v1.0.6上传图片异常 "${error.message}"}}`);
                 // this.uploadImage(data);
                 if(__DEV__) console.log('upload error', error.message);
             });
