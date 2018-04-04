@@ -21,10 +21,12 @@ import ErrorPage from './ErrorPage';
 import LoadingPage from './LoadingPage';
 import Qiniu,{Auth,ImgOps,Conf,Rs,Rpc} from 'react-native-qiniu';
 
+
 const DEFAULT_URL = 'http://www.qyjqk.com/mb/index/exam';
 
 // 测试
 // const DEFAULT_URL = 'http://www.kaasworld.com/jqk/test/mb/index/exam';
+
 
 // 注入的js方法
 const injectScript = `
@@ -73,12 +75,17 @@ export default class Home extends Component {
             if(__DEV__) console.log('add AppState listener error', error.message);
         }
 
+        //test
+        //this.state.showCamera = true;
+
+
         // 更新权限状态
         this.updatePermission();
 
         // 检查摄像头权限
         this.checkCameraPermission();
         setInterval(()=>this.checkCameraPermission(), 5000);
+
     }
 
     // 生命周期方法 组件将卸载
@@ -156,7 +163,7 @@ export default class Home extends Component {
     getDataFromMessage(message){
         let jsonObj = eval("(" + message + ")");
         try {
-            this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "接受js发送的msg: ${message}"}}`);
+            this.webviewbridge.sendToBridge(`{"code": ${1}, "obj": {"msg": "v1.0.6接受js发送的msg: ${message}"}}`);
 
             if (jsonObj.obj) {
                 this.userId = jsonObj.obj.userId,
@@ -293,7 +300,7 @@ export default class Home extends Component {
             })
             .catch((error)=> {
                 // 上传不成功就同个文件再次上传
-                this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": "上传图片异常: ${error.message}"}}`);
+                this.webviewbridge.sendToBridge(`{"code": ${-1}, "obj": {"error": v1.0.6上传图片异常 "${error.message}"}}`);
                 // this.uploadImage(data);
                 if(__DEV__) console.log('upload error', error.message);
             });
@@ -343,6 +350,7 @@ export default class Home extends Component {
     // ----------- 主render方法 ------------
 
     render() {
+
         return (
             <View style={styles.container}>
                 <StatusBar translucent={true} hidden={true}/>
